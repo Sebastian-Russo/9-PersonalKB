@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Knowledge Base</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f1117;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      color: #7c83fd;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 30px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ── Panels ── */
+    .panel {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .panel h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #7c83fd;
+      margin-bottom: 16px;
+    }
+
+    /* ── Inputs ── */
+    input, textarea {
+      width: 100%;
+      padding: 11px 14px;
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 0.95rem;
+      font-family: inherit;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #7c83fd;
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* ── Buttons ── */
+    button {
+      padding: 10px 20px;
+      background: #7c83fd;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #9198fe; }
+    button:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: #2a2d3a;
+      color: #aaa;
+    }
+    .btn-secondary:hover { background: #353849; color: #e0e0e0; }
+
+    /* ── Answer box ── */
+    #answer-box {
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 120px;
+      line-height: 1.7;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+      color: #e0e0e0;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    #answer-box.loading { color: #555; font-style: italic; }
+
+    /* ── Sources ── */
+    #sources-list { display: none; }
+
+    .source-card {
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+
+    .source-title {
+      font-size: 0.9rem;
+      color: #7c83fd;
+      text-decoration: none;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .source-title:hover { text-decoration: underline; }
+
+    .source-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+    .tag {
+      background: #2a2d3a;
+      color: #aaa;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .tag:hover { background: #7c83fd; color: #fff; }
+
+    /* ── Documents sidebar ── */
+    #doc-list { max-height: 500px; overflow-y: auto; }
+
+    .doc-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #2a2d3a;
+      font-size: 0.85rem;
+    }
+
+    .doc-item:last-child { border-bottom: none; }
+
+    .doc-title {
+      color: #e0e0e0;
+      display: block;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-date { color: #555; font-size: 0.75rem; }
+
+    /* ── Status message ── */
+    #status {
+      font-size: 0.85rem;
+      padding: 8px 0;
+      min-height: 24px;
+      color: #7c83fd;
+    }
+
+    #status.error { color: #ff6b6b; }
+    #status.success { color: #6bffb8; }
+  </style>
+</head>
+<body>
+
+<div style="max-width:1100px; margin: 0 auto;">
+  <h1>🧠 Personal Knowledge Base</h1>
+  <p class="subtitle">Save URLs. Ask questions. Get answers from your own reading.</p>
+
+  <div class="layout">
+
+    <!-- Left: main panel -->
+    <div>
+
+      <!-- Ingest -->
+      <div class="panel" style="margin-bottom: 20px;">
+        <h2>Add a URL</h2>
+        <input id="url-input" type="text" placeholder="https://example.com/article" />
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button id="ingest-btn">Save to KB</button>
+          <span id="status"></span>
+        </div>
+      </div>
+
+      <!-- Query -->
+      <div class="panel">
+        <h2>Ask Your Knowledge Base</h2>
+        <textarea id="question-input" placeholder="What did I read about index funds?"></textarea>
+        <div style="display:flex; gap:10px; margin-bottom:16px;">
+          <input id="tag-filter" type="text" placeholder="Filter by tag (optional)" style="margin:0;" />
+          <button id="query-btn">Ask</button>
+        </div>
+
+        <div id="answer-box"></div>
+
+        <div id="sources-list">
+          <p style="font-size:0.8rem; color:#555; margin-bottom:8px;">Sources</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: documents sidebar -->
+    <div class="panel">
+      <h2>Saved Documents</h2>
+      <div id="doc-list">
+        <p style="color:#555; font-size:0.85rem;">No documents yet.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── Ingest ─────────────────────────────────────────────────
+  document.getElementById("ingest-btn").addEventListener("click", async () => {
+    const url    = document.getElementById("url-input").value.trim();
+    const status = document.getElementById("status");
+    if (!url) return;
+
+    setStatus("Scraping and saving...", "");
+    document.getElementById("ingest-btn").disabled = true;
+
+    const res  = await fetch("/ingest", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ url })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      setStatus(`✓ Saved "${data.title}" — ${data.chunks_stored} chunks, tags: ${data.tags.join(", ")}`, "success");
+      document.getElementById("url-input").value = "";
+      loadDocuments();
+    } else {
+      setStatus(`✗ ${data.error}`, "error");
+    }
+
+    document.getElementById("ingest-btn").disabled = false;
+  });
+
+  // ── Query ──────────────────────────────────────────────────
+  document.getElementById("query-btn").addEventListener("click", async () => {
+    const question  = document.getElementById("question-input").value.trim();
+    const tagFilter = document.getElementById("tag-filter").value.trim();
+    if (!question) return;
+
+    const answerBox   = document.getElementById("answer-box");
+    const sourcesList = document.getElementById("sources-list");
+
+    answerBox.style.display   = "block";
+    answerBox.classList.add("loading");
+    answerBox.textContent     = "Searching your knowledge base...";
+    sourcesList.style.display = "none";
+    document.getElementById("query-btn").disabled = true;
+
+    const res  = await fetch("/query", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ question, tag_filter: tagFilter })
+    });
+    const data = await res.json();
+
+    answerBox.classList.remove("loading");
+    answerBox.textContent = data.answer;
+
+    // Render sources
+    if (data.sources && data.sources.length > 0) {
+      sourcesList.style.display = "block";
+      sourcesList.innerHTML     = `<p style="font-size:0.8rem; color:#555; margin-bottom:8px;">Sources (${data.sources.length})</p>`;
+      data.sources.forEach(s => {
+        const card = document.createElement("div");
+        card.className = "source-card";
+        card.innerHTML = `
+          <a class="source-title" href="${s.url}" target="_blank">${s.title}</a>
+          <div class="source-tags">${s.tags.map(t =>
+            `<span class="tag" onclick="filterByTag('${t}')">${t}</span>`
+          ).join("")}</div>`;
+        sourcesList.appendChild(card);
+      });
+    }
+
+    document.getElementById("query-btn").disabled = false;
+  });
+
+  // ── Tag click filter ───────────────────────────────────────
+  function filterByTag(tag) {
+    document.getElementById("tag-filter").value = tag;
+  }
+
+  // ── Load documents sidebar ─────────────────────────────────
+  async function loadDocuments() {
+    const res  = await fetch("/documents");
+    const docs = await res.json();
+    const list = document.getElementById("doc-list");
+
+    if (docs.length === 0) {
+      list.innerHTML = `<p style="color:#555; font-size:0.85rem;">No documents yet.</p>`;
+      return;
+    }
+
+    list.innerHTML = docs.map(d => `
+      <div class="doc-item">
+        <span class="doc-title" title="${d.url}">${d.title || d.url}</span>
+        <div class="source-tags" style="margin-bottom:4px;">
+          ${d.tags.map(t => `<span class="tag" onclick="filterByTag('${t}')">${t}</span>`).join("")}
+        </div>
+        <span class="doc-date">${d.date}</span>
+      </div>`
+    ).join("");
+  }
+
+  // ── Helpers ────────────────────────────────────────────────
+  function setStatus(msg, type) {
+    const el = document.getElementById("status");
+    el.textContent = msg;
+    el.className   = type;
+  }
+
+  // Load documents on page load
+  loadDocuments();
+</script>
+
+</body>
+</html>
